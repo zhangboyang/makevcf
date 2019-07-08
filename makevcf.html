@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta http-equiv="content-language" content="zh-CN">
+<meta name="viewport" content="width=700">
+<title>VCF生成器</title>
+<style type="text/css">
+textarea {
+    height: 200px;
+    width: 200px;
+}
+#yl {
+    width: 600px;
+}
+td {
+    padding: 10px;
+}
+</style>
+</head>
+
+<body>
+<h1>VCF生成器</h1>
+zby 2019.7.8<br>
+<hr>
+请粘贴<strong>姓名</strong>到下框内<br>
+<textarea id="xm" autocomplete="off">张三
+李四
+王五</textarea><br>
+<hr>
+请粘贴<strong>手机号</strong>到下框内<br>
+<textarea id="sj" autocomplete="off">333333
+444444
+555555</textarea><br>
+<hr>
+
+<script>
+var xm = null;
+var sj = null;
+function ch2hex(x)
+{
+    return "=" + ("00" + x.toString(16).toUpperCase()).slice(-2);
+}
+function str2utf8(s)
+{
+    var r = "";
+    for (var i = 0; i < s.length; i++) {
+		var ch = s.charCodeAt(i);
+		
+		if (0 <= ch && ch <= 0x7F) {
+			r += ch2hex(ch);
+		} else if (0x80 <= ch && ch <= 0x7FF) {
+			r += ch2hex(0xC0 | (ch >> 6));
+			r += ch2hex(0x80 | (ch & 0x3F));
+		} else if (0x800 <= ch && ch <= 0xFFFF) {
+			r += ch2hex(0xE0 | (ch >> 12));
+			r += ch2hex(0x80 | ((ch >> 6) & 0x3F));
+			r += ch2hex(0x80 | (ch & 0x3F));
+		} else if (0x10000 <= ch && ch <= 0x10FFFF) {
+			r += ch2hex(0xF0 | (ch >> 18));
+			r += ch2hex(0x80 | ((ch >> 12) & 0x3F));
+			r += ch2hex(0x80 | ((ch >> 6) & 0x3F));
+			r += ch2hex(0x80 | (ch & 0x3F));
+		}
+	}
+	return r;
+}
+function xiazai(filename, text) {
+  var element = document.createElement('a');
+  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+  element.setAttribute('download', filename);
+
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+}
+function yl()
+{
+    xm = document.getElementById("xm").value.split(/\s+/g).filter(function(i){return i});
+    sj = document.getElementById("sj").value.split(/\s+/g).filter(function(i){return i});
+    var qwz = document.getElementById("qwz").value;
+    var hwz = document.getElementById("hwz").value;
+    console.log(xm,sj);
+    if (xm.length != sj.length) {
+        document.getElementById("yl").value = "错误：数量不匹配！";
+        xm = null;
+        sj = null;
+        return;
+    }
+    
+    var r = "";
+    for (var i = 0; i < xm.length; i++) {
+        xm[i] = qwz + xm[i] + hwz;
+        r += "[" + xm[i] + "] => [" + sj[i] + "]\n";
+    }
+    
+    document.getElementById("yl").value = r;
+}
+function mkvcf(t)
+{
+    yl();
+    if (xm == null || sj == null || xm.length == 0 || sj.length == 0) {
+        return;
+    }
+    
+    var vcfname = "_myvcf.vcf";
+    
+    var r = "";
+    for (var i = 0; i < xm.length; i++) {
+        r += "BEGIN:VCARD\n";
+        
+        if (t==1) {
+            vcfname = "_huawei.vcf";
+            r += "VERSION:2.1\n";
+            r += "N;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:;" + str2utf8(xm[i]) + ";;;\n";
+            r += "FN;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:" + str2utf8(xm[i]) + "\n";
+            r += "TEL;CELL:" + sj[i] + "\n";
+        }
+        if (t==2) {
+            vcfname = "_apple.vcf";
+            r += "VERSION:3.0\n";
+            r += "N:;" + xm[i] + ";;;\n";
+            r += "FN:" + xm[i] + "\n";
+            r += "TEL;TYPE=CELL;TYPE=pref;TYPE=VOICE:" + sj[i] + "\n";
+        }
+        r += "END:VCARD\n";
+    }
+    
+    xiazai(xm[0] + "等" + vcfname, r);
+}
+</script>
+姓名<strong>前</strong>添加文字：<input type="text" id="qwz" value="1" autocomplete="off"><br>
+姓名<strong>后</strong>添加文字：<input type="text" id="hwz" value="妈妈" autocomplete="off"><br>
+<hr>
+<button type="button" onclick="yl()">预览</button><br>
+<strong>请在电脑上使用Chrome或Firefox浏览器打开此网页进行操作！</strong><br>
+<strong>第一步：请先点上方“预览”，然后检查对应关系是否正确！</strong><br>
+<strong>第二步：确认无误后，点击下面“生成VCF”，下载转好格式的通讯录文件，用微信等方式传至手机导入即可！</strong><br>
+<button type="button" onclick="mkvcf(1)">生成VCF（华为）</button>
+<button type="button" onclick="mkvcf(2)">生成VCF（苹果）</button><br>
+<textarea id="yl" autocomplete="off"></textarea><br>
+</body>
+</html>
